@@ -1,10 +1,27 @@
-import React from "react";
-import CssBaseline from "@mui/material/CssBaseline";
+import React, { useMemo } from "react";
+import { SnackbarProvider } from "notistack";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import SendIcon from "@mui/icons-material/Send";
-import Button from "@mui/material/Button";
-
+import {
+  ConnectionProvider,
+  WalletProvider,
+} from "@solana/wallet-adapter-react";
+import {
+  getLedgerWallet,
+  getPhantomWallet,
+  getSlopeWallet,
+  getSolflareWallet,
+  getSolletExtensionWallet,
+  getSolletWallet,
+  getTorusWallet,
+} from "@solana/wallet-adapter-wallets";
+import { WalletDialogProvider } from "./utils/wallet/WalletDialogProvider";
+import Navbar from "./components/Navbar";
 import Routes from "./routes";
+import CssBaseline from "@mui/material/CssBaseline";
+import { network, endpoint } from "./config/solanaNetwork";
+import Footer from "./components/Footer";
+import { useLocation } from "react-router-dom";
+import ScrollToTop from "./components/ScrollToTop";
 
 const theme = createTheme({
   palette: {
@@ -15,18 +32,41 @@ const theme = createTheme({
   },
 });
 
-function App() {
+export default function App() {
+  const location = useLocation();
+
+  const wallets = useMemo(
+    () => [
+      getPhantomWallet(),
+      getSlopeWallet(),
+      getSolflareWallet(),
+      getTorusWallet({
+        options: { clientId: "Get a client ID @ https://developer.tor.us" },
+      }),
+      getLedgerWallet(),
+      getSolletWallet({ network }),
+      getSolletExtensionWallet({ network }),
+    ],
+    []
+  );
+
   return (
-    <React.Fragment>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Routes />
-        <Button variant="contained" endIcon={<SendIcon />}>
-          Send
-        </Button>
-      </ThemeProvider>
-    </React.Fragment>
+    <ThemeProvider theme={theme}>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletDialogProvider>
+            <SnackbarProvider>
+              <CssBaseline />
+              <ScrollToTop />
+              <Navbar />
+              <Routes />
+              {(location.pathname === "/" || location.pathname === "/about") && (
+                <Footer />
+              )}
+            </SnackbarProvider>
+          </WalletDialogProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </ThemeProvider>
   );
 }
-
-export default App;
